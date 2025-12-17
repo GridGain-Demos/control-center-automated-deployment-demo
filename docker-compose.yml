@@ -1,0 +1,92 @@
+#
+# Copyright (C) GridGain Systems. All Rights Reserved.
+#  _________        _____ __________________        _____
+#  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+#  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+#  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+#  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+#
+
+name: control-center-fully-automated-deployment-tutorial
+version: '3.8'
+
+x-ignite-def:
+  &ignite-def
+  image: apacheignite/ignite:3.1.0
+  configs:
+    - source: node_config
+      target: /opt/ignite/etc/ignite-config.conf
+
+services:
+  cluster1:
+    << : *ignite-def
+    command: --node-name cluster1-node1
+    configs:
+      - source: cluster1_node_config
+        target: /opt/ignite/etc/ignite-config.conf
+    ports:
+      - 10300:10300
+      - 10800:10800
+  cluster2:
+    << : *ignite-def
+    command: --node-name cluster2-node1
+    configs:
+      - source: cluster2_node_config
+        target: /opt/ignite/etc/ignite-config.conf
+    ports:
+      - 10310:10300
+      - 10810:10800
+  control-center-backend:
+    environment:
+      - ACCOUNT_ADMIN_EMAIL=${CC_ADMIN_EMAIL?CC_ADMIN_EMAIL not set}
+      - ACCOUNT_ADMIN_PASSWORD=${CC_ADMIN_PASSWORD?CC_ADMIN_PASSWORD not set}
+    image: gridgain/gridgain-control-center-backend:2025.5
+    volumes:
+      - ${PWD}/config/control-center.conf:/opt/gridgain-control-center/application.properties
+      - ${PWD}/config/control-center-license.xml:/opt/gridgain-control-center/license/control-center-license.xml:ro
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/actuator/health/liveness"]
+      interval: 5s
+      timeout: 5s
+      retries: 60
+      start_period: 5s
+  control-center-frontend:
+    image: gridgain/gridgain-control-center-frontend:2025.5
+    depends_on:
+      control-center-backend:
+        condition: service_healthy
+    volumes:
+      - ${PWD}/config/nginx.conf:/etc/nginx/control-center.conf
+    ports:
+      # Proxy HTTP Nginx port (HOST_PORT:DOCKER_PORT)
+      - 8008:8008
+  control-center-connector:
+    environment:
+      - CC_URL=http://control-center-backend:3000
+      - CONNECTOR_USERNAME=${CC_ADMIN_EMAIL?CC_ADMIN_EMAIL not set}
+      - CONNECTOR_PASSWORD=${CC_ADMIN_PASSWORD?CC_ADMIN_PASSWORD not set}
+    image: gridgain/cloud-connector:2025.5
+    depends_on:
+      control-center-backend:
+        condition: service_healthy
+    volumes:
+      - ${PWD}/config/connector.conf:/opt/gridgain-cloud-connector/application.properties
+
+configs:
+  cluster1_node_config:
+    content: |
+      ignite.network {
+        port = 3344
+        nodeFinder.netClusterNodes = [
+          "cluster1-node1:3344"
+        ]
+      }
+
+  cluster2_node_config:
+    content: |
+      ignite.network {
+        port = 3344
+        nodeFinder.netClusterNodes = [
+          "cluster2-node1:3344"
+        ]
+      }

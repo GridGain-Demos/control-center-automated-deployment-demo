@@ -1,0 +1,32 @@
+{
+  "notifications": [
+    {
+      "clusterTag": "production-cluster",
+      "channels": [
+        {
+          "tag": "ops-email-alerts",
+          "type": "EMAIL",
+          "emails": [
+            "ops-alerts@example.com",
+            "oncall2@example.com"
+          ]
+        },
+        {
+          "tag": "pagerduty-critical",
+          "type": "WEBHOOK",
+          "url": "https://events.pagerduty.com/integration/your-integration-key/enqueue"
+        }
+      ]
+    },
+    {
+      "clusterTag": "development-cluster",
+      "channels": [
+        {
+          "tag": "dev-email-alerts",
+          "type": "WEBHOOK",
+          "url": "https://events.pagerduty.com/integration/your-integration-key/enqueue"
+        }
+      ]
+    }
+  ]
+}

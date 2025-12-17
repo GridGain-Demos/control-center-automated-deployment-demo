@@ -1,0 +1,24 @@
+{
+  "clusters": [
+    {
+      "tag": "production-cluster",
+      "metaStorageNode": "cluster1-node1",
+      "connectorName": "cloud-connector",
+      "restUrl": "http://cluster1:10300",
+      "initUrl": "http://localhost:10300",
+      "shareWith": [
+        "operations-team"
+      ]
+    },
+    {
+      "tag": "development-cluster",
+      "metaStorageNode": "cluster2-node1",
+      "restUrl": "http://cluster2:10300",
+      "initUrl": "http://localhost:10310",
+      "shareWith": [
+        "development-team",
+        "operations-team"
+      ]
+    }
+  ]
+}

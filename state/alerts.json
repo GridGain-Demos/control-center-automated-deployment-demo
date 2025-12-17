@@ -1,0 +1,76 @@
+{
+  "alerts": [
+    {
+      "clusterTag": "production-cluster",
+      "configurations": [
+        {
+          "tag": "low-node-count",
+          "enabled": true,
+          "condition": {
+            "template": "topology.cluster.TotalNodes",
+            "node": "*",
+            "conditionType": "LESS_THAN",
+            "thresholdValue": 2,
+            "gracePeriod": 60000
+          },
+          "notificationChannelTags": ["ops-email-alerts", "pagerduty-critical"]
+        },
+        {
+          "tag": "high-heap-memory",
+          "enabled": true,
+          "condition": {
+            "template": "jvm.memory.heap.Used",
+            "node": "*",
+            "conditionType": "GREATER_THAN",
+            "thresholdValue": 500000000,
+            "gracePeriod": 120000,
+            "autoClosePeriod": 300000
+          },
+          "notificationChannelTags": ["ops-email-alerts"]
+        },
+        {
+          "tag": "high-cpu-usage",
+          "enabled": true,
+          "condition": {
+            "template": "os.CpuLoad",
+            "node": "*",
+            "conditionType": "GREATER_THAN",
+            "thresholdValue": 5,
+            "gracePeriod": 180000,
+            "autoClosePeriod": 300000
+          },
+          "notificationChannelTags": ["ops-email-alerts"]
+        }
+      ]
+    },
+    {
+      "clusterTag": "development-cluster",
+      "configurations": [
+        {
+          "tag": "low-node-count",
+          "enabled": true,
+          "condition": {
+            "template": "topology.cluster.TotalNodes",
+            "node": "*",
+            "conditionType": "LESS_THAN",
+            "thresholdValue": 2,
+            "gracePeriod": 60000
+          },
+          "notificationChannelTags": ["dev-email-alerts"]
+        },
+        {
+          "tag": "high-heap-memory",
+          "enabled": true,
+          "condition": {
+            "template": "jvm.memory.heap.Used",
+            "node": "*",
+            "conditionType": "GREATER_THAN",
+            "thresholdValue": 450000000,
+            "gracePeriod": 120000
+          },
+          "notificationChannelTags": ["dev-email-alerts"]
+        }
+      ]
+    }
+  ]
+}
