@@ -1,0 +1,6 @@
+# Control Center Deployment Script - Python Dependencies
+#
+# Install with: pip install -r requirements.txt
+
+# HTTP client
+httpx>=0.24.0

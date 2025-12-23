@@ -1,0 +1,20 @@
+{
+  "teams": [
+    {
+      "name": "development-team",
+      "members": [
+        "alice.johnson@example.com",
+        "bob.smith@example.com",
+        "charlie.wilson@example.com"
+      ]
+    },
+    {
+      "name": "operations-team",
+      "members": [
+        "diana.chen@example.com",
+        "edward.garcia@example.com",
+        "fiona.murphy@example.com"
+      ]
+    }
+  ]
+}

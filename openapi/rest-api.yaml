@@ -1,0 +1,1760 @@
+#
+# Copyright (C) GridGain Systems. All Rights Reserved.
+#  _________        _____ __________________        _____
+#  __  ____/___________(_)______  /__  ____/______ ____(_)_______
+#  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
+#  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
+#  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
+#
+
+openapi: 3.0.3
+info:
+  x-logo:
+    url: 'https://www.gridgain.com/assets/web/images/gridgain-logo-2021.svg'
+    backgroundColor: '#FFFFFF'
+    altText: 'Example logo'
+  title: Control Center REST API definition.
+  license:
+    name: Apache 2.0
+    url: https://ignite.apache.org
+  version: VERSION_PLACEHOLDER
+servers:
+  - url: http://localhost:3000
+security:
+  - basicAuth: []
+  - bearerToken: []
+
+paths:
+  /rest/v1/authentication/jwt:
+    delete:
+      tags:
+        - jwt-authentication
+      summary: Revoke all JWTs
+      description: Revoke all issued JWTs.
+      operationId: revokeTokensByUsername
+      parameters:
+        - name: username
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Username to revoke all issued JWTs from.
+      responses:
+        '204':
+          description: All issued JWT were revoked.
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/authentication/jwt/{token}:
+    delete:
+      tags:
+        - jwt-authentication
+      summary: Revoke JWT
+      description: Revoke a specific JWT.
+      operationId: revokeToken
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+            description: JWT to revoke.
+      responses:
+        '204':
+          description: JWT was revoked.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/authentication/login:
+    post:
+      operationId: login
+      security: [ ]
+      tags:
+        - jwt-authentication
+      summary: Get JWT
+      description: Get JWT for the user.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginBody'
+      responses:
+        '200':
+          description: JWT returned.
+          content:
+            application/jwt:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters:
+    get:
+      operationId: listClusters
+      tags:
+        - cluster
+      summary: Get the list of clusters for current user
+      responses:
+        '200':
+          description: Clusters returned.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClusterResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      operationId: attachCluster
+      tags:
+        - cluster
+      summary: Attach cluster.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttachClusterRequest"
+      responses:
+        '200':
+          description: Cluster attached.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/EntityAlreadyExistsError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters/{connectionId}/actions/revoke:
+    delete:
+      operationId: revokeCluster
+      tags:
+        - cluster
+      summary: Revoke cluster from teams, users.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                description: Team name or username to revoke from.
+                x-constraints: "@NotBlank @MaxInputSize"
+      responses:
+        '204':
+          description: Cluster revoked.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters/{connectionId}/actions/share:
+    post:
+      operationId: shareCluster
+      tags:
+        - cluster
+      summary: Share cluster with other teams and users.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: string
+                description: Team name or username to share with.
+                x-constraints: "@NotBlank @MaxInputSize"
+      responses:
+        '201':
+          description: Cluster shared.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters/{connectionId}/health:
+    get:
+      operationId: health
+      tags:
+        - health
+      summary: Inspect the health status of cluster.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      responses:
+        '200':
+          description: Health status returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClusterHealthResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters/{connectionId}/health/{reportName}:
+    get:
+      operationId: report
+      tags:
+        - health
+      summary: Inspect the health report by the cluster.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+        - name: reportName
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique report name.
+      responses:
+        '200':
+          description: Cluster health report returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthReportResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/users:
+    get:
+      tags:
+        - user
+      operationId: getUsers
+      summary: Get the list of registered users
+      responses:
+        '200':
+          description: List of the registered users.
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    post:
+      tags:
+        - user
+      operationId: registerUser
+      summary: Register a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegisterRequest"
+      responses:
+        '201':
+          description: User registered.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/EntityAlreadyExistsError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/users/bulk:
+    put:
+      tags:
+        - user
+      operationId: registerUsers
+      summary: Batch users registration.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              required:
+                - file
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: User registered.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BatchUserRegisterResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/EntityAlreadyExistsError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/users/{username}:
+    get:
+      tags:
+        - user
+      operationId: getUserByName
+      summary: Get user by username
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns a user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    patch:
+      tags:
+        - user
+      operationId: updateUser
+      summary: Updates a user.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdateRequest'
+        required: true
+      responses:
+        '204':
+          description: User updated.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - user
+      operationId: deleteUser
+      summary: Deletes a user by username.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: User deleted.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/teams:
+    get:
+      tags:
+        - team
+      operationId: getTeams
+      summary: Get the list of teams available for current user
+      responses:
+        '200':
+          description: List of the available teams.
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - team
+      operationId: createTeam
+      summary: Creates a team.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamCreateRequest"
+      responses:
+        '201':
+          description: Team created.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/teams/{name}:
+    get:
+      tags:
+        - team
+      operationId: getTeam
+      summary: Get team by name
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Returns a team
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TeamResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    patch:
+      tags:
+        - team
+      operationId: updateTeam
+      summary: Updates a team.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TeamUpdateRequest'
+        required: true
+      responses:
+        '200':
+          description: Team updated.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - team
+      operationId: deleteTeam
+      summary: Deletes a team by name.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Team deleted.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/teams/{name}/members:
+    get:
+      tags:
+        - team
+      operationId: getMembers
+      summary: Returns the list of team members.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The list of team members.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TeamMemberResponse'
+                description: The list of team members.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - team
+      operationId: inviteMember
+      summary: Add members to the team
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - items
+              type: array
+              items:
+                type: string
+                x-constraints: "@MaxInputSize"
+                description: Username to add to the team.
+              description: List of usernames to add to the team.
+      responses:
+        '200':
+          description: Team member added.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      tags:
+        - team
+      operationId: deleteMember
+      summary: Delete team member.
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - items
+              type: array
+              items:
+                type: string
+                description: Username to delete from the team.
+                x-constraints: "@MaxInputSize"
+              description: List of usernames to delete from to the team.
+      responses:
+        '204':
+          description: Team member deleted.
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /rest/v1/license:
+    post:
+      tags:
+        - license
+      operationId: updateLicense
+      summary: Upload new license
+      requestBody:
+        description: The Control Center license to update.
+        content:
+          text/plain:
+            schema:
+              type: string
+        required: true
+      responses:
+        '200':
+          description: License updated.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /rest/v1/connectors:
+    get:
+      operationId: listConnectors
+      tags:
+        - connector
+      summary: Get the list of connectors for current user.
+      responses:
+        '200':
+          description: Connector names.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters/{connectionId}/notifications:
+    get:
+      operationId: listNotificationChannels
+      tags:
+        - notification-channel
+      summary: Get the list of notification channels for cluster.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      responses:
+        '200':
+          description: Notification channels
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/NotificationChannelResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - notification-channel
+      operationId: createNotificationChannel
+      summary: Create notification channel
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNotificationChannelRequest'
+        required: true
+      responses:
+        '200':
+          description: Notification channel created
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/EntityAlreadyExistsError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters/{connectionId}/notifications/{tag}:
+    patch:
+      tags:
+        - notification-channel
+      operationId: updateNotificationChannel
+      summary: Update notification channel
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tag of the notification channel to update.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateNotificationChannelRequest'
+        required: true
+      responses:
+        '204':
+          description: Notification channel updated
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/MissingEntityError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - notification-channel
+      operationId: deleteNotificationChannel
+      summary: Delete notification channel
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tag of the notification channel to delete.
+      responses:
+        '204':
+          description: Notification channel deleted
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /rest/v1/clusters/{connectionId}/alert-configurations:
+    get:
+      tags:
+        - alert
+      operationId: listAlertConfigurations
+      summary: Get the list of alert configurations for cluster.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      responses:
+        '200':
+          description: Alert configuration list returned.
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertConfigurationResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    post:
+      tags:
+        - alert
+      operationId: createAlertConfiguration
+      summary: Create alert configuration.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertConfigurationCreateRequest'
+        required: true
+      responses:
+        '201':
+          description: Alert configuration created.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/EntityAlreadyExistsError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /rest/v1/clusters/{connectionId}/alert-configurations/{tag}:
+    patch:
+      tags:
+        - alert
+      operationId: updateAlertConfiguration
+      summary: Update alert configuration.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+        - name: tag
+          in: path
+          schema:
+            type: string
+          required: true
+          description: Tag of the alert configuration to update.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertConfigurationUpdateRequest'
+        required: true
+      responses:
+        '204':
+          description: Alert configuration updated.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+    delete:
+      tags:
+        - alert
+      operationId: deleteAlertConfiguration
+      summary: Delete alert configuration.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: tag
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Alert configuration deleted.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /rest/v1/clusters/{connectionId}/alerts:
+    get:
+      tags:
+        - alert
+      operationId: listAlerts
+      summary: Get the list of alert for cluster.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Unique Connection ID.
+      responses:
+        '200':
+          description: Alert list returned.
+          content:
+            'application/json':
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/AlertResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+  /rest/v1/clusters/{connectionId}/alerts/{id}:
+    delete:
+      tags:
+        - alert
+      operationId: deleteAlert
+      summary: Delete alert.
+      parameters:
+        - name: connectionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Alert deleted.
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: Basic authentication for the API.
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: JWT token authentication for the API.
+
+  responses:
+    ValidationError:
+      description: Request validation error.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+    UnauthorizedError:
+      description: Authentication information is missing or invalid.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ForbiddenError:
+      description: Not enough permissions.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    ServerError:
+      description: Internal error.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    EntityAlreadyExistsError:
+      description: Entity already exists
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    MissingEntityError:
+      description: No such entry.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    LoginBody:
+      type: object
+      description: DTO of login request body.
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Username.
+          x-constraints: "@MaxInputSize"
+        password:
+          type: string
+          format: password
+          description: Password.
+          x-constraints: "@MaxInputSize"
+
+    HealthReportStatus:
+      type: string
+      description: Overall cluster health status.
+      enum:
+        - GOOD
+        - WARNING
+        - BAD
+        - UNKNOWN
+
+    ClusterHealthResponse:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthReportStatus'
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealthReportResponse'
+
+    HealthReportResponse:
+      type: object
+      properties:
+        reportName:
+          type: string
+          description: Reporter name.
+        description:
+          type: string
+          description: Detailed description.
+        status:
+          $ref: '#/components/schemas/HealthReportStatus'
+      description: Health report response.
+
+    UserResponse:
+      type: object
+      required:
+        - username
+        - admin
+        - locked
+      properties:
+        username:
+          type: string
+          description: Email address of the user.
+          x-constraints: "@MaxInputSize"
+        firstName:
+          type: string
+          description: First name of the user.
+          x-constraints: "@MaxInputSize"
+        lastName:
+          type: string
+          description: Last name of the user.
+          x-constraints: "@MaxInputSize"
+        company:
+          type: string
+          description: Company name of the user.
+          x-constraints: "@MaxInputSize"
+        country:
+          type: string
+          description: Country of the user.
+          x-constraints: "@MaxInputSize"
+        admin:
+          type: boolean
+          description: Whether the user is an admin. Available only for the administrator.
+          default: false
+        locked:
+          type: boolean
+          description: Whether the user is locked. Available only for the administrator.
+          default: false
+
+    UserRegisterRequest:
+      type: object
+      required:
+        - username
+      properties:
+        username:
+          type: string
+          description: Username of the user.
+          x-constraints: "@MaxInputSize"
+        password:
+          type: string
+          format: password
+          description: Password for the user.
+        firstName:
+          type: string
+          description: First name of the user.
+          x-constraints: "@MaxInputSize"
+        lastName:
+          type: string
+          description: Last name of the user.
+          x-constraints: "@MaxInputSize"
+        company:
+          type: string
+          description: Company name of the user.
+          x-constraints: "@MaxInputSize"
+        country:
+          type: string
+          description: Country of the user.
+          x-constraints: "@MaxInputSize"
+          default: Rest of the World
+        admin:
+          type: boolean
+          description: Whether the user is an admin. Available only for the administrator.
+          default: false
+          x-constraints: "@OnlyForAdmin"
+        locked:
+          type: boolean
+          description: Whether the user is locked. Available only for the administrator.
+          default: false
+
+    BatchUserRegisterResponse:
+      type: object
+      description: Results of bulk user register operation.
+      properties:
+        totalNumberOfUsers:
+          type: integer
+        registered:
+          type: integer
+        failed:
+          type: integer
+        failUsers:
+          type: string
+          x-constraints: "@MaxInputSize"
+
+    UserUpdateRequest:
+      type: object
+      properties:
+        password:
+          type: string
+        firstName:
+          type: string
+          x-constraints: "@MaxInputSize"
+        lastName:
+          type: string
+          x-constraints: "@MaxInputSize"
+        company:
+          type: string
+          x-constraints: "@MaxInputSize"
+        country:
+          type: string
+          x-constraints: "@MaxInputSize"
+        admin:
+          type: boolean
+          description: Toggle whether the user is an admin.
+          default: null
+        locked:
+          type: boolean
+          description: Toggle whether the user is locked.
+          default: null
+
+    TeamCreateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Team name
+          x-constraints: "@Pattern(regexp = \"^[^;@,]+$\", message = \"{err.unexpected-characters-in-team-name}\") @MaxInputSize"
+        owner:
+          type: string
+          description: Team owner username. If not specified, the current user will be used.
+          x-constraints: "@MaxInputSize @OnlyForAdmin"
+
+    TeamUpdateRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Team name
+          x-constraints: "@Pattern(regexp = \"^[^;@,]+$\", message = \"{err.unexpected-characters-in-team-name}\") @MaxInputSize"
+
+    TeamMemberResponse:
+      type: object
+      required:
+        - name
+      properties:
+        username:
+          type: string
+          description: Username of team member.
+          x-constraints: "@MaxInputSize"
+        authority:
+          type: string
+          enum:
+            - USER
+            - OWNER
+          description: Type of team member.
+
+    TeamResponse:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          description: Team name
+          x-constraints: "@Pattern(regexp = \"^[^;@,]+$\", message = \"{err.unexpected-characters-in-team-name}\") @MaxInputSize"
+        members:
+          type: array
+          description: List of team members.
+          items:
+            $ref: '#/components/schemas/TeamMemberResponse'
+
+    ClusterResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Cluster ID.
+        tag:
+          type: string
+          description: Cluster name.
+        connectorName:
+          type: string
+          description: Connector name.
+        edition:
+          type: string
+          description: Edition of the cluster.
+          enum:
+            - APACHE_IGNITE
+            - GRIDGAIN_COMMUNITY
+            - GRIDGAIN_ENTERPRISE
+            - GRIDGAIN_ULTIMATE
+            - APACHE_IGNITE_3
+            - GRIDGAIN_9
+            - GRIDGAIN_9_COMMUNITY
+            - GRIDGAIN_9_ENTERPRISE
+            - GRIDGAIN_9_ULTIMATE
+        status:
+          type: string
+          description: Cluster status.
+          enum:
+            - ACTIVE
+            - INACTIVE
+            - DISCONNECTED
+            - LIMITED
+            - UNINITIALIZED
+
+    AttachClusterRequest:
+      type: object
+      required:
+        - restUrl
+      properties:
+        restUrl:
+          type: string
+          format: uri
+          description: REST endpoint for one of the cluster's node.
+          x-constraints: "@URL"
+        thinClient:
+          type: object
+          properties:
+            addresses:
+              type: array
+              items:
+                type: string
+                description: Thin client endpoint for one of the cluster's node.
+                x-constraints: "@MaxInputSize @NotBlank"
+            ssl:
+              type: boolean
+              description: Whether to use SSL for the thin client connection.
+              default: false
+        username:
+          type: string
+          description: Username to use for the cluster connection.
+          x-constraints: "@MaxInputSize"
+        password:
+          type: string
+          format: password
+          description: Password to use for the cluster connection.
+          x-constraints: "@MaxInputSize"
+        connectorName:
+          type: string
+          description: Connector name to use for the cluster
+          x-constraints: "@MaxInputSize"
+        owner:
+          type: string
+          description: Team owner username. If not specified, the current user will be used.
+          x-constraints: "@MaxInputSize @OnlyForAdmin"
+
+    BasicNotificationChannel:
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          "EMAIL": "#/components/schemas/EmailNotificationChannel"
+          "SMS": "#/components/schemas/SmsNotificationChannel"
+          "WEBHOOK": "#/components/schemas/WebhookNotificationChannel"
+      required:
+        - id
+        - tag
+        - type
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier of the notification channel.
+        tag:
+          type: string
+          minLength: 1
+          description: Tag of the notification channel.
+        type:
+          type: string
+          description: Type of the notification channel.
+          example: EMAIL
+
+    EmailNotificationChannel:
+      required:
+        - id
+        - tag
+        - emails
+      allOf:
+        - $ref: "#/components/schemas/BasicNotificationChannel"
+        - type: object
+          properties:
+            emails:
+              type: array
+              description: Email addresses to send notifications to.
+              items:
+                type: string
+              minItems: 1
+              uniqueItems: true
+
+    SmsNotificationChannel:
+      required:
+        - id
+        - tag
+        - phoneNumbers
+      allOf:
+        - $ref: "#/components/schemas/BasicNotificationChannel"
+        - type: object
+          properties:
+            phoneNumbers:
+              type: array
+              description: Phone numbers to send SMS notifications to.
+              items:
+                type: string
+              minItems: 1
+              uniqueItems: true
+
+    WebhookNotificationChannel:
+      required:
+        - id
+        - tag
+        - url
+      allOf:
+        - $ref: "#/components/schemas/BasicNotificationChannel"
+        - type: object
+          properties:
+            url:
+              type: string
+              format: uri
+              description: URL to send notifications to.
+
+    NotificationChannelResponse:
+      oneOf:
+        - $ref: '#/components/schemas/EmailNotificationChannel'
+        - $ref: '#/components/schemas/SmsNotificationChannel'
+        - $ref: '#/components/schemas/WebhookNotificationChannel'
+
+    BasicCreateNotificationChannelRequest:
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          "EMAIL": "#/components/schemas/EmailCreateNotificationChannelRequest"
+          "SMS": "#/components/schemas/SmsCreateNotificationChannelRequest"
+          "WEBHOOK": "#/components/schemas/WebhookCreateNotificationChannelRequest"
+      required:
+        - tag
+        - type
+      properties:
+        tag:
+          type: string
+          minLength: 1
+        type:
+          type: string
+          description: Type of notification channel
+          example: EMAIL
+        owner:
+          type: string
+          description: Owner of the notification channel. If not specified, the current user will be used.
+
+    EmailCreateNotificationChannelRequest:
+      required:
+        - tag
+        - type
+        - emails
+      allOf:
+        - $ref: "#/components/schemas/BasicCreateNotificationChannelRequest"
+        - type: object
+          properties:
+            emails:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              uniqueItems: true
+
+    SmsCreateNotificationChannelRequest:
+      required:
+        - tag
+        - type
+        - phoneNumbers
+      allOf:
+        - $ref: "#/components/schemas/BasicCreateNotificationChannelRequest"
+        - type: object
+          properties:
+            phoneNumbers:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              uniqueItems: true
+
+    WebhookCreateNotificationChannelRequest:
+      required:
+        - tag
+        - type
+        - url
+      allOf:
+        - $ref: "#/components/schemas/BasicCreateNotificationChannelRequest"
+        - type: object
+          properties:
+            url:
+              type: string
+              format: uri
+              description: Webhook endpoint URL for receiving notifications.
+
+    CreateNotificationChannelRequest:
+      oneOf:
+        - $ref: "#/components/schemas/EmailCreateNotificationChannelRequest"
+        - $ref: "#/components/schemas/SmsCreateNotificationChannelRequest"
+        - $ref: "#/components/schemas/WebhookCreateNotificationChannelRequest"
+
+    BasicUpdateNotificationChannelRequest:
+      type: object
+      discriminator:
+        propertyName: type
+        mapping:
+          "EMAIL": "#/components/schemas/EmailUpdateNotificationChannelRequest"
+          "SMS": "#/components/schemas/SmsUpdateNotificationChannelRequest"
+          "WEBHOOK": "#/components/schemas/WebhookUpdateNotificationChannelRequest"
+      required:
+        - type
+      properties:
+        type:
+          type: string
+          description: Target type of notification channel.
+          example: EMAIL
+
+    EmailUpdateNotificationChannelRequest:
+      required:
+        - type
+        - emails
+      allOf:
+        - $ref: "#/components/schemas/BasicUpdateNotificationChannelRequest"
+        - type: object
+          properties:
+            emails:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              uniqueItems: true
+
+    SmsUpdateNotificationChannelRequest:
+      required:
+        - type
+        - phoneNumbers
+      allOf:
+        - $ref: "#/components/schemas/BasicUpdateNotificationChannelRequest"
+        - type: object
+          properties:
+            phoneNumbers:
+              type: array
+              items:
+                type: string
+              minItems: 1
+              uniqueItems: true
+
+    WebhookUpdateNotificationChannelRequest:
+      required:
+        - type
+        - url
+      allOf:
+        - $ref: "#/components/schemas/BasicUpdateNotificationChannelRequest"
+        - type: object
+          properties:
+            url:
+              type: string
+              format: uri
+              description: Webhook endpoint URL for receiving notifications.
+
+    UpdateNotificationChannelRequest:
+      oneOf:
+        - $ref: "#/components/schemas/EmailUpdateNotificationChannelRequest"
+        - $ref: "#/components/schemas/SmsUpdateNotificationChannelRequest"
+        - $ref: "#/components/schemas/WebhookUpdateNotificationChannelRequest"
+
+    MetricCondition:
+      type: object
+      required:
+        - template
+        - node
+        - conditionType
+        - thresholdValue
+        - gracePeriod
+      properties:
+        template:
+          type: string
+          minLength: 1
+          description: Metric template identifier for monitoring.
+        node:
+          type: string
+          minLength: 1
+          description: Unique identifier of the cluster node.
+        conditionType:
+          type: string
+          description: Type of condition.
+          enum:
+            - LESS_THAN
+            - GREATER_THAN
+            - LESS_THAN_OR_EQUAL_TO
+            - GREATER_THAN_OR_EQUAL_TO
+            - EQUALS
+            - NOT_EQUAL
+        thresholdValue:
+          type: number
+          description: Threshold value.
+        gracePeriod:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+          description: Grace period, in milliseconds.
+        autoClosePeriod:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+          description: Period after which the alert will be automatically closed if the condition is no longer met, in milliseconds.
+
+    AlertConfigurationResponse:
+      type: object
+      required:
+        - tag
+        - enabled
+        - condition
+        - notificationChannelTags
+      properties:
+        tag:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+        condition:
+          $ref: '#/components/schemas/MetricCondition'
+        notificationChannelTags:
+          type: array
+          items:
+            type: string
+            x-constraints: "@MaxInputSize"
+          uniqueItems: true
+        status:
+          type: string
+          enum: [ALERTING, GOOD, NO_DATA]
+        triggerCount:
+          type: integer
+          format: int64
+          minimum: 0
+          default: 0
+          description: Count of alerting events.
+
+    AlertConfigurationCreateRequest:
+      type: object
+      required:
+        - tag
+        - condition
+        - enabled
+      properties:
+        tag:
+          type: string
+          minLength: 1
+        enabled:
+          type: boolean
+          description: Enabled flag
+          default: true
+        condition:
+          $ref: '#/components/schemas/MetricCondition'
+        notificationChannelTags:
+          type: array
+          items:
+            type: string
+            x-constraints: "@MaxInputSize"
+          uniqueItems: true
+
+    AlertConfigurationUpdateRequest:
+      type: object
+      properties:
+        tag:
+          type: string
+        enabled:
+          type: boolean
+        condition:
+          $ref: '#/components/schemas/MetricCondition'
+        notificationChannelTags:
+          type: array
+          items:
+            type: string
+            x-constraints: "@MaxInputSize"
+          uniqueItems: true
+
+    AlertResponse:
+      type: object
+      required:
+        - id
+        - tag
+        - timestamp
+        - state
+        - consistentId
+        - message
+      properties:
+        id:
+          type: string
+          format: uuid
+        tag:
+          type: string
+          minLength: 1
+          description: Alert tag.
+        timestamp:
+          type: integer
+          format: int64
+          description: Alert time.
+        state:
+          type: string
+          enum: [ALERTING, GOOD, NO_DATA, PENDING]
+          description: Alert state.
+        consistentId:
+          type: string
+          description: Consistent ID of node where event happens.
+        message:
+          type: string
+          description: Detailed description.
+
+    InvalidParam:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Parameter name.
+        reason:
+          type: string
+          description: The issue with the parameter.
+      description: Information about invalid request parameter.
+
+    ValidationError:
+      type: object
+      properties:
+        invalidParams:
+          type: array
+          description: A list of parameters that did not pass validation and the reason
+            for it.
+          items:
+            $ref: '#/components/schemas/InvalidParam'
+        detail:
+          type: string
+          description: Extended explanation of the issue.
+
+    Problem:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code.
+        detail:
+          type: string
+          description: Extended explanation of the issue.

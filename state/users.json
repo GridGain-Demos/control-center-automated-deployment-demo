@@ -1,0 +1,58 @@
+{
+  "users": [
+    {
+      "username": "alice.johnson@example.com",
+      "password": "DevPass2024!",
+      "firstName": "Alice",
+      "lastName": "Johnson",
+      "admin": false,
+      "company": "ACME Corporation",
+      "country": "USA"
+    },
+    {
+      "username": "bob.smith@example.com",
+      "password": "DevPass2024!",
+      "firstName": "Bob",
+      "lastName": "Smith",
+      "admin": false,
+      "company": "ACME Corporation",
+      "country": "USA"
+    },
+    {
+      "username": "charlie.wilson@example.com",
+      "password": "DevPass2024!",
+      "firstName": "Charlie",
+      "lastName": "Wilson",
+      "admin": false,
+      "company": "ACME Corporation",
+      "country": "Canada"
+    },
+    {
+      "username": "diana.chen@example.com",
+      "password": "OpsPass2024!",
+      "firstName": "Diana",
+      "lastName": "Chen",
+      "admin": false,
+      "company": "ACME Corporation",
+      "country": "USA"
+    },
+    {
+      "username": "edward.garcia@example.com",
+      "password": "OpsPass2024!",
+      "firstName": "Edward",
+      "lastName": "Garcia",
+      "admin": false,
+      "company": "ACME Corporation",
+      "country": "Mexico"
+    },
+    {
+      "username": "fiona.murphy@example.com",
+      "password": "OpsPass2024!",
+      "firstName": "Fiona",
+      "lastName": "Murphy",
+      "admin": true,
+      "company": "ACME Corporation",
+      "country": "Ireland"
+    }
+  ]
+}
